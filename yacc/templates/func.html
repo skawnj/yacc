@@ -1,0 +1,23 @@
+<html>
+<head>
+	<title>yacc application server</title>
+</head>
+<body>
+	{% load static from staticfiles %}
+	<h1>yacc application server</h1>
+	<h3>usage(for the JSON format): ./func/<font color='red'><u>[function call inself]</u></font><br>
+	usage(in a readable style): ./func_readable/<font color='red'><u>[function call inself]</u></font></h3>
+	<h3>api doc: <a href="{% static 'yacc_pydoc.txt' %}" target='_blank'>pydoc</a><br>
+	api doc: <a href="{% static 'yacc_db_brief.txt' %}" target='_blank'>db_brief</h3></a>
+	<hr>
+
+	<img src="{% static 'jjang01.png' %}" width="200px">
+
+	<h4>examples:</h4>
+	<ul>
+	{% for i in cstrings %}
+	<li><a href="{{ i }}">{{ i }}</a> - <a href="../func_readable/{{ i }}">readable version</a></li>
+	{% endfor %}
+	</ul>
+</body>
+</html>
