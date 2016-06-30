@@ -55,7 +55,7 @@ ROOT_URLCONF = 'yacc.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['yacc/yacc/templates'],
+        'DIRS': ['yacc/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
