@@ -1,25 +1,64 @@
 <html>
 <head>
+	{% load static from staticfiles %}
 	<title>yacc application server</title>
+    <link rel="icon" type="image/png" href={% static 'jjang01.png' %}>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+                $('#run_btn').click(function(){
+                    var str_input = $('#str_input').val();
+                    if (str_input.trim().length > 0)
+                    {
+                        $.ajax(
+                            {
+                                url: "r/" + str_input,
+                                data: "",
+                                success: function(data){
+                                    $('#result_place').html(data);
+                                }
+                            });
+                    }
+                    else
+                        alert("A blank input is prohibited.");
+                    });
+                
+                $('#str_input').keydown(function(e){
+                        if (e.keyCode == 13)
+                        {
+                            e.preventDefault();
+                            $('#run_btn').trigger("click");
+                        }
+                    });
+
+                }
+            );
+    </script>
 </head>
 <body>
-	{% load static from staticfiles %}
-	<h1>yacc application server</h1>
-	<h3>usage(for the JSON format): ./func/<font color='red'><u>[function call inself]</u></font><br>
-	usage(in a readable style): ./func_readable/<font color='red'><u>[function call inself]</u></font></h3>
-	<h3>api doc: <a href="{% static 'yacc_pydoc.txt' %}" target='_blank'>pydoc</a><br>
+	<h1>yacc server - backend, the most back</h1>
+	<h3>usage(JSON format): [this site addr]/func/<font color='red'><u>[func call itself]</u></font><br>
+	usage(readable style): [this site addr]/func/r/<font color='red'><u>[func call itself]</u></font></h3>
+	<h3>api doc: <a href="{% static 'yacc_pydoc.txt' %}" target='_blank'>pydoc</a>&nbsp;/&nbsp;
 	api doc: <a href="{% static 'yacc_db_brief.txt' %}" target='_blank'>db_brief</h3></a>
 	<hr>
     <table border=0><tr>
-    	<td><img src="{% static 'jjang01.png' %}" width="200px"></td>
-	    <td><img src="{% static 'heen01.jpg' %}" width="200px"></td>
+    	<td><img src="{% static 'jjang01.png' %}" width="150px"></td>
+	    <td><img src="{% static 'heen01.jpg' %}" width="150px"></td>
     </tr></table>
-
-	<h4>examples:</h4>
-	<ul>
-	{% for i in cstrings %}
-	<li><a href="{{ i }}">{{ i }}</a> - <a href="../func_readable/{{ i }}">readable version</a></li>
-	{% endfor %}
-	</ul>
+    <h4>examples:</h4>
+    <ul>
+    {% for i in cstrings %}
+    <li><a href="{{ i }}">{{ i }}</a> <a href="../func/r/{{ i }}">readable</a></li>
+    {% endfor %}
+    </ul>
+    <h4>quick run:</h4>
+    <u>[this site addr]/func/r/</u>
+    <input type="text" id="str_input" style="width: 300px">
+    <input type="button" value="Run" id="run_btn"><p>
+    <font size=2>
+        (result area ↓)<br>
+        <div id="result_place" style="border: 1px dashed; background-color: FFFFCC; width:520px; height:200px; font-size:10px; overflow-x:hidden; overflow-y:auto; display:inline-block">&nbsp; </div>
+    </font>
 </body>
 </html>

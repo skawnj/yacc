@@ -51,9 +51,9 @@ def index(request, call_string = None, option = None):
                         , "get_user_info('session_no_7777')"                        
                         , "get_session_id('Double Goat')"
                         , "search_restr('서여의도')"
-                        , "search_restr('찌개')"
-                        , "_gen_nickname()"
-                        , "_get_timestamp()"
+                        #, "search_restr('찌개')"
+                        #, "_gen_nickname()"
+                        #, "_get_timestamp()"
                         ]
             })
         return HttpResponse(template.render(context))
@@ -62,6 +62,9 @@ def index(request, call_string = None, option = None):
         
 def readable(request, call_string = None):
     return index(request, call_string, 'readable')
+
+def test_page(request):
+    return HttpResponse('a message from the test page...')
 
 '''
 def index(request):

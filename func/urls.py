@@ -21,4 +21,5 @@ urlpatterns = [
     url(r'^$', views.index),
     url(r'^(?P<call_string>[^/]+)$', views.index),
     url(r'^r/(?P<call_string>.+)$', views.readable),
+    url(r'^t/test$', views.test_page),
 ]
