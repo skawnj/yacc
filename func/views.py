@@ -7,6 +7,8 @@ from django.shortcuts import redirect
 import sys
 from . import yacc
 #import urllib.parse
+from .models import *
+import time
 
 def _make_dict_readable(src_dict, indent_count = 0):
     buf = ''
@@ -64,7 +66,12 @@ def readable(request, call_string = None):
     return index(request, call_string, 'readable')
 
 def test_page(request):
-    return HttpResponse('a message from the test page...')
+    #return HttpResponse('a message from the test page...')
+    restr = RestrBase.objects.create(rid = 'abcd' + str(time.time()))
+    restr.save()
+    restr_base = [i.rid for i in RestrBase.objects.all()]
+    return HttpResponse(restr_base)
+
 
 '''
 def index(request):
