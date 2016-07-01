@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Last Modified: 2016-06-22 01:28
 # Last Modified: 2016-06-03 18:48
-from lxml import html
+#from lxml import html
 from urllib.parse import urljoin
 import os
 import requests
@@ -13,7 +13,7 @@ import math
 import pickle
 import json
 #from django.db import models
-from models import NicknameSrcAdj
+from .models import NicknameSrcAdj
 
 # 숙제
 '''
@@ -39,7 +39,7 @@ DB_FILE_PATH = os.path.join(os.path.dirname(__file__), 'yacc5.db')
 TESTDATA_PATH = os.path.join(os.path.dirname(__file__), 'pkle')
 HQ_COORD = (126.920762, 37.5283199) # 본점 좌표(네이버 API로 미리 추출)
 IT_COORD = (126.9220432, 37.5278059) # 별관 좌표(네이버 API로 미리 추출)
-
+"""
 # 크롤링
 def _crawl(query = '홍대', count = 100): # query를 검색어로 하여 총 count개를 긁어 옴.
     base_url = 'http://diningcode.com'
@@ -82,7 +82,7 @@ def _crawl(query = '홍대', count = 100): # query를 검색어로 하여 총 co
             target_url = None # 대상 URL 해제하여 로직 반복 중단(while 루프 탈출)
 
     return(res_set)
-
+"""
 # 크롤링
 def _get_addr_coord(addr = '서울특별시 영등포구 여의동로 257 천주교여의도교회'): # 주소에 대한 GPS 좌표 획득(네이버 지도)
     params = { 'encoding': 'utf-8', 'coord': 'latlng', 'output': 'json',
