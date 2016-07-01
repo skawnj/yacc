@@ -12,6 +12,8 @@ import datetime
 import math
 import pickle
 import json
+#from django.db import models
+from models import NicknameSrcAdj
 
 # 숙제
 '''
@@ -145,26 +147,31 @@ def _gen_db_schema():
 
 # DB
 def _calibrate_data():
-    with sqlite3.connect(DB_FILE_PATH) as conn:
-        with open(TESTDATA_PATH, 'rb') as fp:
-            cur = conn.cursor()
-            nickname_src = pickle.load(fp)
-            ts = _get_timestamp()
-            query = '''\
-                INSERT INTO NICKNAME_SRC_ADJ VALUES
-                    {0}
-            '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[0]]))
-            cur.execute(query)
-            conn.commit()
-            ts = _get_timestamp()
-            query = '''\
-                INSERT INTO NICKNAME_SRC_NOUN VALUES
-                    {0}
-            '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[1]]))
-            cur = conn.cursor()
-            cur.execute(query)
-            conn.commit()
+    #settings.configure()
+    nnsadj = NicknameSrcAdj.objects.create(adjective = 'abc', cnt_used = 0, last_used_time = datetime.datetime())
+    nnsadj.save()
+    return
+    """with open(TESTDATA_PATH, 'rb') as fp:
+        nickname_src = pickle.load(fp)
+        ts = _get_timestamp()
+        query = '''\
+            INSERT INTO NICKNAME_SRC_ADJ VALUES
+                {0}
+        '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[0]]))
+        cur.execute(query)
+        conn.commit()
 
+
+        ts = _get_timestamp()
+        query = '''\
+            INSERT INTO NICKNAME_SRC_NOUN VALUES
+                {0}
+        '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[1]]))
+        cur = conn.cursor()
+        cur.execute(query)
+        conn.commit()
+
+    """
     # 강제로 세션 ID 전처리기를 실행해 세 명의 유저 세션을 생성함.
     _preproc_session_id('session_no_1357')
     _preproc_session_id('session_no_2468')
@@ -329,7 +336,7 @@ def _search_restr_single_word(keyword): # 단일 단어
         cur.execute(query)
         res = cur.fetchall()
         return(res)
-        
+
 def _make_json_from_selection(selection, header):
     if len(selection) <= 0: # When nothing has been selected, return an empty dict
         return dict()
@@ -374,7 +381,7 @@ def get_restr_list(count = 10, option = None, session_id = None):
                 q = 'SELECT * FROM RESTR_BASE'
                 cur.execute(q)
                 restr_list = cur.fetchmany(count)
-                header = list(zip(*cur.description))[0]            
+                header = list(zip(*cur.description))[0]
                 restr_list = _make_json_from_selection(restr_list, header)
         else:
             print('Not defined option.')
@@ -385,7 +392,7 @@ def get_restr_list(count = 10, option = None, session_id = None):
                 q = 'SELECT * FROM RESTR_BASE ORDER BY UPT_TIME DESC'
                 cur.execute(q)
                 restr_list = cur.fetchmany(count)
-                header = list(zip(*cur.description))[0]            
+                header = list(zip(*cur.description))[0]
                 restr_list = _make_json_from_selection(restr_list, header)
         else:
             print('Not defined option.')
@@ -396,7 +403,7 @@ def get_restr_list(count = 10, option = None, session_id = None):
                 query = 'SELECT * FROM RESTR_BASE ORDER BY RANDOM() LIMIT {0}'.format(count)
                 cur.execute(query)
                 restr_list = cur.fetchall()
-                header = list(zip(*cur.description))[0]            
+                header = list(zip(*cur.description))[0]
                 restr_list = _make_json_from_selection(restr_list, header)
         else:
             print('Not defined option.')
@@ -417,7 +424,7 @@ def get_restr_list(count = 10, option = None, session_id = None):
                 q = 'SELECT * FROM RESTR_BASE ORDER BY {0}'.format(order_by_col)
                 cur.execute(q)
                 restr_list = cur.fetchmany(count)
-                header = list(zip(*cur.description))[0]            
+                header = list(zip(*cur.description))[0]
                 restr_list = _make_json_from_selection(restr_list, header)
         else:
             print('Not defined option.')
@@ -451,7 +458,7 @@ def get_restr_detail(restr_id, session_id = None, hit_or_not = True): # hit_or_n
         if detail == None:
             print('No restaurant called {0}.'.format(restr_id))
             return None
-        header = list(zip(*cur.description))[0]            
+        header = list(zip(*cur.description))[0]
         detail = _make_json_from_selection(detail, header)
         query = "SELECT * FROM USER_REVIEW WHERE RID = '{0}' ORDER BY REVIEW_TIME DESC".format(restr_id)
         cur.execute(query)
@@ -547,12 +554,12 @@ def get_user_info(session_id):
         user_info = cur.fetchone()
         if user_info == None:
             return None
-        header = list(zip(*cur.description))[0]            
+        header = list(zip(*cur.description))[0]
         user_info = _make_json_from_selection(user_info, header)
         query = "SELECT * FROM USER_REVIEW WHERE SID = '{0}' ORDER BY REVIEW_TIME DESC".format(session_id)
         cur.execute(query)
         reviewed = cur.fetchall()
-        header = list(zip(*cur.description))[0]            
+        header = list(zip(*cur.description))[0]
         reviewed = _make_json_from_selection(reviewed, header)
         res = {'USER_INFO': user_info, 'REVIEW_LIST': reviewed}
         return(res) # 사용자 정보와 동 사용자의 리뷰한 것들을 같이 반환함.
@@ -605,7 +612,7 @@ def get_session_id(nickname): # 사용자가 기억한 별명으로부터 세션
         query = "SELECT SID FROM USER_BASE WHERE NICKNAME = '{0}'".format(nickname)
         cur.execute(query)
         sess = cur.fetchone()
-        header = list(zip(*cur.description))[0]            
+        header = list(zip(*cur.description))[0]
         sess = _make_json_from_selection(sess, header)
         return(sess)
 
@@ -701,6 +708,7 @@ def _print_db(result_list):
     print('\n'.join([str(i) for i in result_list]))
 
 if __name__ == '__main__':
+    _calibrate_data()
     '''
     _drop_tables()
     _gen_db_schema()
@@ -745,5 +753,5 @@ if __name__ == '__main__':
     #print(_gen_nickname())
     #_deal_with_pickle()
     #_exec_qurey()
-    a = {1: {'ADDR': '여의도 · 서울시 영등포구 여의도동 16-2 1F (중소기업중앙회신관 건물 1층)', 'RID': 'R20160604010629153804', 'DIST_HQ': 0.001981652895951576, 'UPT_TIME': '20160604010629153804', 'COORD_Y': 37.5281813, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/53247/58022/53247_58022_86_5_5326_201572673841549_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '보나베띠 여의도점', 'COORD_X': 126.9227388, 'DIST_IT': 0.0007904331217772451, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=fCBYskxnOCky&rank=27', 'PHONE': '02-780-3886'}, 2: {'ADDR': '여의도 · 서울특별시 영등포구 여의도동 16-2', 'RID': 'R20160604010629558074', 'DIST_HQ': 0.001981652895951576, 'UPT_TIME': '20160604010629558074', 'COORD_Y': 37.5281813, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/57189/50096/57189_50096_77_0_3036_201631802252364_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '달맞이 꽃게탕', 'COORD_X': 126.9227388, 'DIST_IT': 0.0007904331217772451, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=F8IzY8XHgHtO&rank=58', 'PHONE': '02-3775-0118'}, 3: {'ADDR': '여의도 · 서울특별시 영등포구 여의도동 16-2', 'RID': 'R20160604010630063411', 'DIST_HQ': 0.001981652895951576, 'UPT_TIME': '20160604010630063411', 'COORD_Y': 37.5281813, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/55601/58987/55601_58987_86_5_4060_201572825730907_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '명동할머니국수 서여의도점', 'COORD_X': 126.9227388, 'DIST_IT': 0.0007904331217772451, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=2AWJjClsTJZJ&rank=96', 'PHONE': '02-3775-3779'}, 4: {'ADDR': '여의도 · 서울특별시 영등포구 여의도동 14-15', 'RID': 'R20160604010629165812', 'DIST_HQ': 0.0007042791775973079, 'UPT_TIME': '20160604010629165812', 'COORD_Y': 37.5286203, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/51820/52947/51820_52947_80_0_8935_201473114438908_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '동해도 본점', 'COORD_X': 126.921399, 'DIST_IT': 0.0010383838404070924, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=yQ699tA32IEh&rank=28', 'PHONE': '02-761-6350'}, 5: {'ADDR': '여의도 · 서울특별시 영등포구 여의도동 13-25', 'RID': 'R20160604010629369949', 'DIST_HQ': 0.0013472848882181824, 'UPT_TIME': '20160604010629369949', 'COORD_Y': 37.5290775, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/53344/51043/53344_51043_77_0_216_20158202552186_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '정우칼국수', 'COORD_X': 126.9218761, 'DIST_IT': 0.001282532249109619, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=7rxrKLPFV3D6&rank=43', 'PHONE': '02-783-4007'}}
-    xx(a, 0)
+    #a = {1: {'ADDR': '여의도 · 서울시 영등포구 여의도동 16-2 1F (중소기업중앙회신관 건물 1층)', 'RID': 'R20160604010629153804', 'DIST_HQ': 0.001981652895951576, 'UPT_TIME': '20160604010629153804', 'COORD_Y': 37.5281813, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/53247/58022/53247_58022_86_5_5326_201572673841549_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '보나베띠 여의도점', 'COORD_X': 126.9227388, 'DIST_IT': 0.0007904331217772451, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=fCBYskxnOCky&rank=27', 'PHONE': '02-780-3886'}, 2: {'ADDR': '여의도 · 서울특별시 영등포구 여의도동 16-2', 'RID': 'R20160604010629558074', 'DIST_HQ': 0.001981652895951576, 'UPT_TIME': '20160604010629558074', 'COORD_Y': 37.5281813, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/57189/50096/57189_50096_77_0_3036_201631802252364_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '달맞이 꽃게탕', 'COORD_X': 126.9227388, 'DIST_IT': 0.0007904331217772451, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=F8IzY8XHgHtO&rank=58', 'PHONE': '02-3775-0118'}, 3: {'ADDR': '여의도 · 서울특별시 영등포구 여의도동 16-2', 'RID': 'R20160604010630063411', 'DIST_HQ': 0.001981652895951576, 'UPT_TIME': '20160604010630063411', 'COORD_Y': 37.5281813, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/55601/58987/55601_58987_86_5_4060_201572825730907_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '명동할머니국수 서여의도점', 'COORD_X': 126.9227388, 'DIST_IT': 0.0007904331217772451, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=2AWJjClsTJZJ&rank=96', 'PHONE': '02-3775-3779'}, 4: {'ADDR': '여의도 · 서울특별시 영등포구 여의도동 14-15', 'RID': 'R20160604010629165812', 'DIST_HQ': 0.0007042791775973079, 'UPT_TIME': '20160604010629165812', 'COORD_Y': 37.5286203, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/51820/52947/51820_52947_80_0_8935_201473114438908_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '동해도 본점', 'COORD_X': 126.921399, 'DIST_IT': 0.0010383838404070924, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=yQ699tA32IEh&rank=28', 'PHONE': '02-761-6350'}, 5: {'ADDR': '여의도 · 서울특별시 영등포구 여의도동 13-25', 'RID': 'R20160604010629369949', 'DIST_HQ': 0.0013472848882181824, 'UPT_TIME': '20160604010629369949', 'COORD_Y': 37.5290775, 'THUMBNAIL_URL': 'https://d2t7cq5f1ua57i.cloudfront.net/images/r_images/53344/51043/53344_51043_77_0_216_20158202552186_300x200.jpg', 'HIT_SCORE': 0, 'AVG_RATING': -1.0, 'NAME': '정우칼국수', 'COORD_X': 126.9218761, 'DIST_IT': 0.001282532249109619, 'DCODE_URL': 'http://diningcode.com/profile.php?rid=7rxrKLPFV3D6&rank=43', 'PHONE': '02-783-4007'}}
+    #xx(a, 0)

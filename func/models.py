@@ -83,3 +83,19 @@ class RestrCrawl(models.Model):
     thumbnailURL = models.URLField(null = True)
     #tag = models.TextField(null = True)
     rid = models.ForeignKey(RestrBase, db_column = 'rid')
+
+class NicknameSrcAdj(models.Model):
+    class Meta:
+        db_table = 'Nickname_Src_Adj'
+
+    adjective = models.CharField(max_length = 30)
+    cnt_used = models.IntegerField(default = 0)
+    last_used_time = models.DateTimeField()
+
+class NicknameSrcNoun(models.Model):
+    class Meta:
+        db_table = 'Nickname_Src_Noun'
+
+    noun = models.CharField(max_length = 30)
+    cnt_used = models.IntegerField(default = 0)
+    last_used_time = models.DateTimeField()

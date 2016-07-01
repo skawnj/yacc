@@ -50,7 +50,7 @@ def index(request, call_string = None, option = None):
                         , "get_restr_list(1, 'random')"
                         , "get_restr_list(10, 'random')"
                         , "get_restr_detail('R20160604010629860275', 'session_no_7777')"
-                        , "get_user_info('session_no_7777')"                        
+                        , "get_user_info('session_no_7777')"
                         , "get_session_id('Double Goat')"
                         , "search_restr('서여의도')"
                         #, "search_restr('찌개')"
@@ -61,15 +61,16 @@ def index(request, call_string = None, option = None):
         return HttpResponse(template.render(context))
         #return HttpResponse(template)
         #return HttpResponse('abc')
-        
+
 def readable(request, call_string = None):
     return index(request, call_string, 'readable')
 
 def test_page(request):
     #return HttpResponse('a message from the test page...')
-    restr = RestrBase.objects.create(rid = 'abcd' + str(time.time()))
-    restr.save()
-    restr_base = [i.rid for i in RestrBase.objects.all()]
+    #restr = RestrBase.objects.create(rid = 'abcd' + str(time.time()))
+    #restr.save()
+    #restr_base = [i.rid for i in RestrBase.objects.all()]
+    func.yacc._calibrate_data()
     return HttpResponse(restr_base)
 
 
