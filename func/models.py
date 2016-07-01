@@ -17,7 +17,7 @@ class RestrBase(models.Model):
     uptTime = models.DateTimeField()
     avgRating = models.FloatField(default = -1)
     hitScore = models.IntegerField(default = 0)
-    dcodeURL = models.URLField(null = True)
+    referenceURL = models.URLField(null = True)
     thumbnailURL = models.URLField(null = True)
     tag = models.TextField(null = True)
 
@@ -62,3 +62,24 @@ class BldgBase(models.Model):
     addr = models.TextField(null = True)
     lati = models.FloatField(null = True)
     longi = models.FloatField(null = True)
+
+class RestrCrawl(models.Model):
+    class Meta:
+        db_table = 'Restr_Crawl'
+
+    name = models.CharField(max_length = 30, primary_key = True)
+    phone = models.CharField(max_length = 20, null = True)
+    #bid = models.ForeignKey('BldgBase', db_column = 'bid')
+    #floor = models.IntegerField(null = True)
+    addr = models.TextField(null = True)
+    lati = models.FloatField(null = True)
+    longi = models.FloatField(null = True)
+    distHQ = models.FloatField(null = True)
+    distIT = models.FloatField(null = True)
+    uptTime = models.DateTimeField()
+    #avgRating = models.FloatField(default = -1)
+    #hitScore = models.IntegerField(default = 0)
+    referenceURL = models.URLField()
+    thumbnailURL = models.URLField(null = True)
+    #tag = models.TextField(null = True)
+    rid = models.ForeignKey(RestrBase, db_column = 'rid')
