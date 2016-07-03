@@ -13,7 +13,7 @@ import math
 import pickle
 import json
 #from django.db import models
-from .models import NicknameSrcAdj
+#from .models import NicknameSrcAdj
 
 # 숙제
 '''
@@ -148,9 +148,11 @@ def _gen_db_schema():
 # DB
 def _calibrate_data():
     #settings.configure()
+    '''
     nnsadj = NicknameSrcAdj.objects.create(adjective = 'abc', cnt_used = 0, last_used_time = datetime.datetime())
     nnsadj.save()
-    return
+    return'''
+    pass
     """with open(TESTDATA_PATH, 'rb') as fp:
         nickname_src = pickle.load(fp)
         ts = _get_timestamp()
@@ -428,6 +430,7 @@ def get_restr_list(count = 10, option = None, session_id = None):
                 restr_list = _make_json_from_selection(restr_list, header)
         else:
             print('Not defined option.')
+    restr_list = _conv_col_name(restr_list)
     return(restr_list)
 
 def get_restr_detail(restr_id, session_id = None, hit_or_not = True): # hit_or_not이 False이면 히트 기록 없이 조회만 함.
@@ -465,13 +468,14 @@ def get_restr_detail(restr_id, session_id = None, hit_or_not = True): # hit_or_n
         reviewed = cur.fetchall()
         header = list(zip(*cur.description))[0]
         reviewed = _make_json_from_selection(reviewed, header)
-        res = {'RESTR_DETAIL': detail, 'REVIEW_LIST': reviewed}
+        res = {'RESTR_BASE': detail, 'USER_REVIEW': reviewed}
 
     if hit_or_not: # 히트 생략 여부 확인
         hit_restr(restr_id, session_id)
 
     ############# get dcode realtime data!!!
     #return([detail, reviewed]) # 식당 상세 정보와 동 식당에 대한 리뷰 기록들을 함께 반환함.
+    res = _conv_col_name(res)
     return(res) # 식당 상세 정보와 동 식당에 대한 리뷰 기록들을 함께 반환함.
 
     #hit_restr(restr_id, session_id) ###############
@@ -561,7 +565,9 @@ def get_user_info(session_id):
         reviewed = cur.fetchall()
         header = list(zip(*cur.description))[0]
         reviewed = _make_json_from_selection(reviewed, header)
-        res = {'USER_INFO': user_info, 'REVIEW_LIST': reviewed}
+        res = {'USER_BASE': user_info, 'USER_REVIEW': reviewed}
+        
+        res = _conv_col_name(res)
         return(res) # 사용자 정보와 동 사용자의 리뷰한 것들을 같이 반환함.
 
 def set_user_review(session_id, restr_id, rating, review_txt):
@@ -614,6 +620,7 @@ def get_session_id(nickname): # 사용자가 기억한 별명으로부터 세션
         sess = cur.fetchone()
         header = list(zip(*cur.description))[0]
         sess = _make_json_from_selection(sess, header)
+        sess = _conv_col_name(sess)
         return(sess)
 
 def search_restr(keyword): # class 형태로 재작성하여 overloading으로 표현할 예정
@@ -656,7 +663,9 @@ def search_restr(keyword): # class 형태로 재작성하여 overloading으로 �
         match_info = _make_json_from_selection(list(match_info), ['MATCH_WHERE', 'MATCH_PART'])
         restr_info = _make_json_from_selection(i[:len(i) - 1], ['RID', 'MATCH_COUNT'])
         #res_final.append({'RESTR_INFO': restr_info, 'MATCH_INFO': match_info})
-        res_final[ix + 1] = {'RESTR_INFO': restr_info, 'MATCH_INFO': match_info}
+        res_final[ix + 1] = {'RESTR_BASE': restr_info, 'MATCH_INFO': match_info}
+
+    res_final = _conv_col_name(res_final)
     return(res_final)
 
 # pickle 작업용
@@ -707,8 +716,31 @@ def _exec_qurey():
 def _print_db(result_list):
     print('\n'.join([str(i) for i in result_list]))
 
+CONV_TAB = {'DIST_HQ': 'distHQ', 'DIST_IT': 'distIT', 'COORD_X': 'longi', 'COORD_Y': 'lati',
+            'THUMBNAIL_URL': 'thumbnailURL', 'DCODE_URL': 'referenceURL',
+            'RESTR_DETAIL': 'Restr_Detail','USER_REVIEW': 'User_Review', 'USER_BASE': 'User_Base',
+            'RESTR_BASE': 'Restr_Base', 'MATCH_INFO': 'Match_Info',
+            'NICKNAME': 'nickName', 'REVIEW_TXT': 'reviewText'}
+def _conv_col_name(src):
+    temp = dict()
+    for k, v in src.items():
+        if k in CONV_TAB.keys():
+            new_k = CONV_TAB[k]
+        else:
+            new_k = str(k).title().replace('_', '')
+            new_k = new_k[0].lower() + new_k[1:]
+        
+        if isinstance(v, dict):
+            new_v = _conv_col_name(v)
+        else:
+            new_v = v
+
+        temp[new_k] = new_v
+    
+    return temp
+
 if __name__ == '__main__':
-    _calibrate_data()
+    #_calibrate_data()
     '''
     _drop_tables()
     _gen_db_schema()
@@ -722,7 +754,9 @@ if __name__ == '__main__':
     '''
     '''
     temp_info = get_user_info('session_no_7777')
-    restr_with_mult_reviews = temp_info[1][0][1]
+    print(temp_info)
+    #restr_with_mult_reviews = temp_info[1][0][1]
+    restr_with_mult_reviews = temp_info['User_Review']['1']['rid']
     print('▶ 레스토랑 상세')
     print(get_restr_detail(restr_with_mult_reviews, 'session_no_7777'))
     '''
@@ -738,7 +772,7 @@ if __name__ == '__main__':
     '''
     '''
     print('▶ 별명으로부터 세션 ID 얻기')
-    print(get_session_id('Annoyed Starfish'))
+    print(get_session_id('Double Goat'))
     '''
     '''
     print('▶ 검색')
