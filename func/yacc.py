@@ -12,8 +12,13 @@ import datetime
 import math
 import pickle
 import json
-#from django.db import models
-#from .models import NicknameSrcAdj
+from django.db.models import Min, Avg
+from .models import RestrBase
+from .models import UserBase
+from .models import BldgBase
+from .models import UserReview
+from .models import NicknameSrcAdj
+from .models import NicknameSrcNoun
 
 # 숙제
 '''
@@ -147,57 +152,46 @@ def _gen_db_schema():
 
 # DB
 def _calibrate_data():
-    #settings.configure()
+    # 닉네임용 데이터(형용사, 명사) 셋 생성
     '''
-    nnsadj = NicknameSrcAdj.objects.create(adjective = 'abc', cnt_used = 0, last_used_time = datetime.datetime())
-    nnsadj.save()
-    return'''
-    pass
-    """with open(TESTDATA_PATH, 'rb') as fp:
+    with open(TESTDATA_PATH, 'rb') as fp:
         nickname_src = pickle.load(fp)
-        ts = _get_timestamp()
-        query = '''\
-            INSERT INTO NICKNAME_SRC_ADJ VALUES
-                {0}
-        '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[0]]))
-        cur.execute(query)
-        conn.commit()
-
-
-        ts = _get_timestamp()
-        query = '''\
-            INSERT INTO NICKNAME_SRC_NOUN VALUES
-                {0}
-        '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[1]]))
-        cur = conn.cursor()
-        cur.execute(query)
-        conn.commit()
-
-    """
+        nnsadj = NicknameSrcAdj.objects.bulk_create([NicknameSrcAdj(adjective = i) for i in nickname_src[0]])
+        nnsnoun = NicknameSrcNoun.objects.bulk_create([NicknameSrcNoun(noun = i) for i in nickname_src[1]])
+    '''
     # 강제로 세션 ID 전처리기를 실행해 세 명의 유저 세션을 생성함.
+    '''
     _preproc_session_id('session_no_1357')
     _preproc_session_id('session_no_2468')
     _preproc_session_id('session_no_7777')
+    '''
 
-    #_insert_restr_list(_crawl('서여의도', 100))
-    #'''
+    # 피클해 둔 레스토랑 데이터를 당겨 옴.
+    '''
     with open(TESTDATA_PATH, 'rb') as fp:
-        _insert_restr_list(pickle.load(fp)[2]) # 크롤링 수행을 않고 pickle된 것을 활용
-    #'''
-
-    #'''
-    with sqlite3.connect(DB_FILE_PATH) as conn:
-        cur = conn.cursor()
-        tot_cnt = cur.execute('SELECT COUNT(*) FROM RESTR_BASE').fetchone()[0]
-        random_restr = cur.execute('SELECT * FROM RESTR_BASE LIMIT 1 OFFSET {0}'.format(random.randint(0, tot_cnt - 1))).fetchone()
-        set_user_review('session_no_1357', random_restr[0], 3.7, 'Not so bad.')
-        random_restr = cur.execute('SELECT * FROM RESTR_BASE LIMIT 1 OFFSET {0}'.format(random.randint(0, tot_cnt - 1))).fetchone()
-        set_user_review('session_no_1357', random_restr[0], 4.1, 'Fabulous! Recommended!')
-        random_restr = cur.execute('SELECT * FROM RESTR_BASE LIMIT 1 OFFSET {0}'.format(random.randint(0, tot_cnt - 1))).fetchone()
-        set_user_review('session_no_1357', random_restr[0], 2.0, 'I must got paid by them... Terrible.')
-        set_user_review('session_no_2468', random_restr[0], 2.5, 'So so... :d')
-        set_user_review('session_no_7777', random_restr[0], 3.9, "I do not know why people dislike here. It is of my fav place.")
-    #'''
+        restr_dump = pickle.load(fp)[2]
+        
+        for i in restr_dump:
+            rb = RestrBase.objects.create(name = i[1], phone = i[3], bid = BldgBase.objects.get(bid = random.randint(1, 2)), floor = 4, addr = i[2],
+                                       lati = i[4][1], longi = i[4][0],
+                                       distHQ = _calc_distance(HQ_COORD, i[4]), distIT = _calc_distance(IT_COORD, i[4]),
+                                       referenceURL = i[5], thumbnailURL = i[6])
+    
+            rb.save()
+        return
+        #_insert_restr_list(pickle.load(fp)[2]) # 크롤링 수행을 않고 pickle된 것을 활용
+    '''
+    
+    # 사용자 리뷰 생성
+    restr_list = RestrBase.objects.all()
+    rr = restr_list[random.randint(0, len(restr_list) - 1)].rid
+    set_user_review('session_no_1357', rr, 3.7, 'Not so bad.')
+    rr = restr_list[random.randint(0, len(restr_list) - 1)].rid
+    set_user_review('session_no_1357', rr, 4.1, 'Fabulous! Recommended!')
+    rr = restr_list[random.randint(0, len(restr_list) - 1)].rid
+    set_user_review('session_no_1357', rr, 2.0, 'I must got paid by them... Terrible.')
+    set_user_review('session_no_2468', rr, 2.5, 'So so... :d')
+    set_user_review('session_no_7777', rr, 3.9, "I do not know why people dislike here. It is of my fav place.")
 
 def _drop_tables():
     with sqlite3.connect(DB_FILE_PATH) as conn:
@@ -241,83 +235,36 @@ def _get_timestamp(length = None):
     else:
         return(datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')[:length])
 
-def _gen_nickname(): # 발음 가능한 랜덤 단어 생성
-    '''target_url = 'http://soybomb.com/tricks/words'
-    target_page = html.fromstring(requests.get(target_url).content)
-    r = target_page.xpath("//font[@size='4']//tr/td/b")
-    return(random.choice(r).text_content())'''
-    nickname_generated = None
-    with sqlite3.connect(DB_FILE_PATH) as conn:
-        cur = conn.cursor()
-        query = 'SELECT CNT_USED, COUNT(*) FROM NICKNAME_SRC_ADJ GROUP BY CNT_USED'
-        cur.execute(query)
-        least_freq, how_many = min(cur.fetchall(), key = lambda x: x[0])
-        query = '''\
-            SELECT * FROM NICKNAME_SRC_ADJ WHERE CNT_USED = {0}
-                LIMIT 1 OFFSET {1}
-            '''.format(least_freq, random.randint(1, how_many - 1))
-        cur.execute(query)
-        nickname_adj = cur.fetchone()[0] # 형용사 부분 획득(랜덤 취득)
-
-        query = 'SELECT CNT_USED, COUNT(*) FROM NICKNAME_SRC_NOUN GROUP BY CNT_USED'
-        cur.execute(query)
-        least_freq, how_many = min(cur.fetchall(), key = lambda x: x[0])
-        query = '''\
-            SELECT * FROM NICKNAME_SRC_NOUN WHERE CNT_USED = {0}
-                LIMIT 1 OFFSET {1}
-            '''.format(least_freq, random.randint(1, how_many - 1))
-        cur.execute(query)
-        nickname_noun = cur.fetchone()[0] # 명사 부분 획득(랜덤 취득)
-
-        # 사용된 형용사와 명사의 카운트 증가
-        ts = _get_timestamp()
-        query = '''\
-            UPDATE NICKNAME_SRC_ADJ SET
-                CNT_USED = CNT_USED + 1
-                , LAST_USED_TIME = '{0}'
-                WHERE ADJECTIVE = '{1}'
-            '''.format(ts, nickname_adj.replace("'", "''"))
-        cur.execute(query)
-        conn.commit()
-        query = '''\
-            UPDATE NICKNAME_SRC_NOUN SET
-                CNT_USED = CNT_USED + 1
-                , LAST_USED_TIME = '{0}'
-                WHERE NOUN = '{1}'
-            '''.format(ts, nickname_noun.replace("'", "''"))
-        cur.execute(query)
-        conn.commit()
-
-        nickname_generated = (nickname_adj + ' ' + nickname_noun).title() # 단어 단위 대문자화
-
+def _gen_nickname(): # 발음 가능한 랜덤 단어 생성   
+    least_freq = NicknameSrcAdj.objects.aggregate(Min('cnt_used'))   
+    nnsadj = NicknameSrcAdj.objects.filter(cnt_used = least_freq['cnt_used__min'])
+    nnsadj_sel = nnsadj[random.randint(0, len(nnsadj) - 1)] # 형용사 부분 획득(랜덤 취득)
+    
+    least_freq = NicknameSrcNoun.objects.aggregate(Min('cnt_used'))   
+    nnsnoun = NicknameSrcNoun.objects.filter(cnt_used = least_freq['cnt_used__min'])
+    nnsnoun_sel = nnsnoun[random.randint(0, len(nnsnoun) - 1)] # 명사 부분 획득(랜덤 취득)
+    
+    # 사용된 형용사와 명사의 카운트 증가
+    nnsadj_sel.cnt_used += 1
+    nnsadj_sel.save()
+    nnsnoun_sel.cnt_used += 1
+    nnsnoun_sel.save()
+    
+    nickname_generated = (nnsadj_sel.adjective + ' ' + nnsnoun_sel.noun).title() # 단어 단위 대문자화
+    print(nickname_generated)
     return(nickname_generated)
 
 def _calc_distance(x, y):
     return(math.hypot(x[0] - y[0], x[1] - y[1]))
 
 def _preproc_session_id(session_id):
-    with sqlite3.connect(DB_FILE_PATH) as conn:
-        cur = conn.cursor()
-        query = "SELECT * FROM USER_BASE WHERE SID = '{0}'".format(session_id)
-        cur.execute(query)
-        res = cur.fetchone()
-
-        ts = _get_timestamp()
-        if res == None:
-            query = '''\
-                INSERT INTO USER_BASE VALUES
-                    ('{0}', '{1}', '{2}', '{3}')
-                '''.format(session_id, _gen_nickname(), ts, ts)
-            cur.execute(query)
-            conn.commit()
-        else:
-            query = '''\
-                UPDATE USER_BASE SET
-                    LAST_CONN_TIME = '{1}'
-                    WHERE SID = '{0}'
-                '''.format(session_id, ts)
-            cur.execute(query)
-            conn.commit()
+    if UserBase.objects.filter(sid = session_id).exists():
+        ub = UserBase.objects.get(sid = session_id)
+        ub.save()
+    else:
+        ub = UserBase.objects.create(sid = session_id, nickName = _gen_nickname())
+        ub.save()
+    return
 
 def _search_restr_single_word(keyword): # 단일 단어
     with sqlite3.connect(DB_FILE_PATH) as conn:
@@ -583,22 +530,14 @@ def set_user_review(session_id, restr_id, rating, review_txt):
     if session_id != None:
         _preproc_session_id(session_id)
 
-    with sqlite3.connect(DB_FILE_PATH) as conn:
-        cur = conn.cursor()
-        query = '''\
-            INSERT INTO USER_REVIEW VALUES
-                ('{0}', '{1}', '{2}', {3}, '{4}')
-            '''.format(session_id, restr_id, _get_timestamp(), str(rating), review_txt)
-        cur.execute(query)
-        conn.commit()
-        # 사용자 리뷰 발생 시 식당 평균 평점을 갱신함.
-        query = '''\
-            UPDATE RESTR_BASE SET
-                AVG_RATING = (SELECT AVG(RATING) FROM USER_REVIEW WHERE RID = '{0}')
-                WHERE RID = '{0}'
-            '''.format(restr_id)
-        cur.execute(query)
-        conn.commit()
+    ur = UserReview.objects.create(sid_id = session_id, rid_id = restr_id, rating = rating, reviewText = review_txt)
+    ur.save()
+    # 사용자 리뷰 발생 시 식당 평균 평점을 갱신함.
+    avg_rating = UserReview.objects.filter(rid_id = restr_id).aggregate(Avg('rating'))['rating__avg']
+    rb = RestrBase.objects.get(rid = restr_id)
+    rb.avgRating = avg_rating
+    rb.save()
+    return
 
 def get_session_id(nickname): # 사용자가 기억한 별명으로부터 세션 ID를 취하고 controller가 그것으로 사용자와 세션을 맺게 함.
     '''

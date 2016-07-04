@@ -14,7 +14,7 @@ class RestrBase(models.Model):
     longi = models.FloatField(null = True)
     distHQ = models.FloatField(null = True)
     distIT = models.FloatField(null = True)
-    uptTime = models.DateTimeField()
+    uptTime = models.DateTimeField(auto_now = True)
     avgRating = models.FloatField(default = -1)
     hitScore = models.IntegerField(default = 0)
     referenceURL = models.URLField(null = True)
@@ -27,8 +27,8 @@ class UserBase(models.Model):
 
     sid = models.CharField(max_length = 20, primary_key = True)
     nickName = models.CharField(max_length = 30)
-    regTime = models.DateTimeField()
-    lastConnTime = models.DateTimeField()
+    regTime = models.DateTimeField(auto_now_add = True)
+    lastConnTime = models.DateTimeField(auto_now = True)
 
 class UserReview(models.Model):
     class Meta:
@@ -38,7 +38,7 @@ class UserReview(models.Model):
     review_id = models.AutoField(primary_key = True)
     sid = models.ForeignKey(UserBase, db_column = 'sid')
     rid = models.ForeignKey(RestrBase, db_column = 'rid')
-    reviewTime = models.DateTimeField()
+    reviewTime = models.DateTimeField(auto_now = True)
     rating = models.FloatField()
     reviewText = models.TextField(null = True)
 
@@ -90,7 +90,7 @@ class NicknameSrcAdj(models.Model):
 
     adjective = models.CharField(max_length = 30)
     cnt_used = models.IntegerField(default = 0)
-    last_used_time = models.DateTimeField()
+    last_used_time = models.DateTimeField(auto_now = True)
 
 class NicknameSrcNoun(models.Model):
     class Meta:
@@ -98,4 +98,4 @@ class NicknameSrcNoun(models.Model):
 
     noun = models.CharField(max_length = 30)
     cnt_used = models.IntegerField(default = 0)
-    last_used_time = models.DateTimeField()
+    last_used_time = models.DateTimeField(auto_now = True)
