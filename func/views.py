@@ -70,8 +70,8 @@ def test_page(request):
     #restr = RestrBase.objects.create(rid = 'abcd' + str(time.time()))
     #restr.save()
     #restr_base = [i.rid for i in RestrBase.objects.all()]
-    func.yacc._calibrate_data()
-    return HttpResponse(restr_base)
+
+    return HttpResponse(yacc._gen_db_schema())
 
 
 '''

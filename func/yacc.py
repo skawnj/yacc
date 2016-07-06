@@ -96,88 +96,33 @@ def _get_addr_coord(addr = '서울특별시 영등포구 여의동로 257 천주
     return r.json()['result']['items'][0]['point']
 
 # DB
-def _gen_db_schema():
-    with sqlite3.connect(DB_FILE_PATH) as conn:
-        cur = conn.cursor()
-        # RESTR_BASE
-        query = '''\
-            CREATE TABLE RESTR_BASE
-                (RID TEXT PRIMARY KEY, NAME TEXT, ADDR TEXT, PHONE TEXT, COORD_X REAL, COORD_Y REAL
-                , DIST_HQ REAL, DIST_IT REAL, UPT_TIME TEXT, AVG_RATING REAL, HIT_SCORE INTEGER
-                , DCODE_URL TEXT, THUMBNAIL_URL TEXT)
-            '''
-        cur.execute(query)
-        # USER_BASE
-        query = '''\
-            CREATE TABLE USER_BASE
-                (SID TEXT PRIMARY KEY, NICKNAME TEXT, REG_TIME TEXT, LAST_CONN_TIME TEXT)
-            '''
-        cur.execute(query)
-        # USER_REVIEW
-        query = '''\
-            CREATE TABLE USER_REVIEW
-                (SID TEXT, RID TEXT, REVIEW_TIME TEXT, RATING REAL, REVIEW_TXT TEXT
-                , PRIMARY KEY(SID, RID, REVIEW_TIME)
-                , FOREIGN KEY(SID) REFERENCES USER_BASE(SID)
-                , FOREIGN KEY(RID) REFERENCES RESTR_BASE(RID))
-            '''
-        cur.execute(query)
-        # NICKNAME_SRC_ADJ
-        query = '''\
-            CREATE TABLE NICKNAME_SRC_ADJ
-                (ADJECTIVE TEXT PRIMARY KEY, CNT_USED INTEGER, LAST_USED_TIME TEXT)
-            '''
-        cur.execute(query)
-        # NICKNAME_SRC_NOUN
-        query = '''\
-            CREATE TABLE NICKNAME_SRC_NOUN
-                (NOUN TEXT PRIMARY KEY, CNT_USED INTEGER, LAST_USED_TIME TEXT)
-            '''
-        cur.execute(query)
-        # USER_VIEW_HIST
-        query = '''\
-            CREATE TABLE USER_VIEW_HIST
-                (SID TEXT, RID TEXT, VIEW_TIME TEXT, STAY_SECONDS INTEGER
-                , PRIMARY KEY(SID, RID, VIEW_TIME)
-                , FOREIGN KEY(SID) REFERENCES USER_BASE(SID)
-                , FOREIGN KEY(RID) REFERENCES RESTR_BASE(RID))
-            '''
-        cur.execute(query)
-        conn.commit()
-
-# DB
+"""
 def _calibrate_data():
-    #settings.configure()
-    '''
-    nnsadj = NicknameSrcAdj.objects.create(adjective = 'abc', cnt_used = 0, last_used_time = datetime.datetime())
-    nnsadj.save()
-    return'''
-    pass
-    """with open(TESTDATA_PATH, 'rb') as fp:
-        nickname_src = pickle.load(fp)
-        ts = _get_timestamp()
-        query = '''\
-            INSERT INTO NICKNAME_SRC_ADJ VALUES
-                {0}
-        '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[0]]))
-        cur.execute(query)
-        conn.commit()
+    with open(TESTDATA_PATH, 'rb') as fp:
+        with sqlite3.connect(DB_FILE_PATH) as conn:
+            cur = conn.cursor()
+            nickname_src = pickle.load(fp)
+            ts = _get_timestamp()
+            query = '''\
+                INSERT INTO NICKNAME_SRC_ADJ VALUES
+                    {0}
+            '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[0]]))
+            cur.execute(query)
+            conn.commit()
 
+            ts = _get_timestamp()
+            query = '''\
+                INSERT INTO NICKNAME_SRC_NOUN VALUES
+                    {0}
+            '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[1]]))
+            cur = conn.cursor()
+            cur.execute(query)
+            conn.commit()
 
-        ts = _get_timestamp()
-        query = '''\
-            INSERT INTO NICKNAME_SRC_NOUN VALUES
-                {0}
-        '''.format(', '.join(["('{0}', 0, '{1}')".format(i.replace("'", "`"), ts) for i in nickname_src[1]]))
-        cur = conn.cursor()
-        cur.execute(query)
-        conn.commit()
-
-    """
     # 강제로 세션 ID 전처리기를 실행해 세 명의 유저 세션을 생성함.
-    _preproc_session_id('session_no_1357')
-    _preproc_session_id('session_no_2468')
-    _preproc_session_id('session_no_7777')
+    preproc_session_id('session_no_1357')
+    preproc_session_id('session_no_2468')
+    preproc_session_id('session_no_7777')
 
     #_insert_restr_list(_crawl('서여의도', 100))
     #'''
@@ -198,23 +143,10 @@ def _calibrate_data():
         set_user_review('session_no_2468', random_restr[0], 2.5, 'So so... :d')
         set_user_review('session_no_7777', random_restr[0], 3.9, "I do not know why people dislike here. It is of my fav place.")
     #'''
-
-def _drop_tables():
-    with sqlite3.connect(DB_FILE_PATH) as conn:
-        cur = conn.cursor()
-        query = "SELECT NAME FROM SQLITE_MASTER WHERE TYPE = 'table'" # 전체 테이블 목록
-        cur.execute(query)
-        res = cur.fetchall()
-        if len(res) > 0:
-            tab_list = list(zip(*res))[0]
-            for tab in tab_list: # 전체 테이블 목록 인식해 모두 drop함.
-                query = '''\
-                    DROP TABLE IF EXISTS {0}
-                    '''.format(tab)
-                cur.execute(query)
-                conn.commit()
+"""
 
 # DB
+"""
 def _insert_restr_list(restr_list):
     for i in restr_list:
         query = '''INSERT INTO RESTR_BASE VALUES
@@ -229,9 +161,7 @@ def _insert_restr_list(restr_list):
             cur = conn.cursor()
             cur.execute(query)
             conn.commit()
-
-# 사용자
-#def preprocess_session():
+"""
 
 # Misc.
 def _get_timestamp(length = None):
@@ -295,6 +225,17 @@ def _gen_nickname(): # 발음 가능한 랜덤 단어 생성
 def _calc_distance(x, y):
     return(math.hypot(x[0] - y[0], x[1] - y[1]))
 
+def set_user_info(session_id):
+    with sqlite3.connect(DB_FILE_PATH) as conn:
+        cur = conn.cursor()
+        ts = _get_timestamp()
+        query = '''\
+            INSERT INTO USER_BASE VALUES
+                ('{0}', '{1}', '{2}', '{3}')
+            '''.format(session_id, _gen_nickname(), ts, ts)
+        cur.execute(query)
+        conn.commit()
+
 def _preproc_session_id(session_id):
     with sqlite3.connect(DB_FILE_PATH) as conn:
         cur = conn.cursor()
@@ -302,20 +243,14 @@ def _preproc_session_id(session_id):
         cur.execute(query)
         res = cur.fetchone()
 
-        ts = _get_timestamp()
         if res == None:
-            query = '''\
-                INSERT INTO USER_BASE VALUES
-                    ('{0}', '{1}', '{2}', '{3}')
-                '''.format(session_id, _gen_nickname(), ts, ts)
-            cur.execute(query)
-            conn.commit()
+            set_user_info(session_id)
         else:
             query = '''\
                 UPDATE USER_BASE SET
                     LAST_CONN_TIME = '{1}'
                     WHERE SID = '{0}'
-                '''.format(session_id, ts)
+                '''.format(session_id, _get_timestamp())
             cur.execute(query)
             conn.commit()
 
@@ -373,14 +308,15 @@ def get_restr_list(count = 10, option = None, session_id = None):
     * 미완성: 데이터 기반 추천 기능 구현 예정. 세션 ID 주어진 경우 사용자별 처리가 현재는 완전 미구현 상태
     '''
     if session_id != None:
-        _preproc_session_id(session_id)
+        preproc_session_id(session_id)
 
     restr_list = None
+    disp_col_str = 'RID, NAME, PHONE, BID, FLOOR, UPT_TIME, AVG_RATING, HIT_SCORE, DCODE_URL, THUMBNAIL_URL, TAG'
     if option == None:
         if session_id == None:
             with sqlite3.connect(DB_FILE_PATH) as conn:
                 cur = conn.cursor()
-                q = 'SELECT * FROM RESTR_BASE'
+                q = 'SELECT {} FROM RESTR_BASE'.format(disp_col_str)
                 cur.execute(q)
                 restr_list = cur.fetchmany(count)
                 header = list(zip(*cur.description))[0]
@@ -391,7 +327,7 @@ def get_restr_list(count = 10, option = None, session_id = None):
         if session_id == None:
             with sqlite3.connect(DB_FILE_PATH) as conn:
                 cur = conn.cursor()
-                q = 'SELECT * FROM RESTR_BASE ORDER BY UPT_TIME DESC'
+                q = 'SELECT {} FROM RESTR_BASE ORDER BY UPT_TIME DESC'.format(disp_col_str)
                 cur.execute(q)
                 restr_list = cur.fetchmany(count)
                 header = list(zip(*cur.description))[0]
@@ -447,7 +383,7 @@ def get_restr_detail(restr_id, session_id = None, hit_or_not = True): # hit_or_n
     * 미완성: 다이닝코드 등에서 실시간으로 더 취해 올 실시간 정보 입수 로직 추가 예정
     '''
     if session_id != None:
-        _preproc_session_id(session_id)
+        preproc_session_id(session_id)
 
     if hit_or_not and session_id == None: # 세션 ID 없이 히트 불가능함.(사용자 식별 불가하므로)
         print('Cannot update the hit score without session id.')
@@ -495,7 +431,7 @@ def hit_restr(restr_id, session_id): # hit은 보통 식당 상세 열람 시 �
     '''
 
     if session_id != None:
-        _preproc_session_id(session_id)
+        preproc_session_id(session_id)
 
     MAX_STAY_SECONDS = 180 # 체류 시간은 최대 3분까지만 측정(180초)
     with sqlite3.connect(DB_FILE_PATH) as conn:
@@ -548,7 +484,7 @@ def get_user_info(session_id):
     # (있는지 조회하려 했는데 등록을 하는 경우가 발생하므로)
     '''
     if session_id != None:
-        _preproc_session_id(session_id)
+        preproc_session_id(session_id)
     '''
 
     with sqlite3.connect(DB_FILE_PATH) as conn:
@@ -566,7 +502,7 @@ def get_user_info(session_id):
         header = list(zip(*cur.description))[0]
         reviewed = _make_json_from_selection(reviewed, header)
         res = {'USER_BASE': user_info, 'USER_REVIEW': reviewed}
-        
+
         res = _conv_col_name(res)
         return(res) # 사용자 정보와 동 사용자의 리뷰한 것들을 같이 반환함.
 
@@ -679,45 +615,8 @@ def _deal_with_pickle():
         pickle.dump([res[0], res[1], _crawl('서여의도', 100)], fp)
     '''
 
-# 디버깅용
-def _exec_qurey():
-    '''
-    conn = sqlite3.connect(DB_FILE_PATH)
-    c = conn.cursor()
-    '''
-
-    '''
-    q = 'drop table restr_base'
-    c.execute(q)
-    conn.commit()
-    '''
-
-    with sqlite3.connect(DB_FILE_PATH) as conn:
-        cur = conn.cursor()
-        #'''
-        #query = 'SELECT * FROM NICKNAME_SRC_NOUN WHERE CNT_USED > 0'
-        #query = 'SELECT * FROM NICKNAME_SRC_ADJ WHERE CNT_USED > 0'
-        #query = 'SELECT * FROM RESTR_BASE'
-        #query = 'SELECT * FROM RESTR_BASE LIMIT 1 OFFSET 0'
-        #query = 'SELECT * FROM USER_REVIEW'
-        #query = "SELECT NAME FROM SQLITE_MASTER WHERE TYPE = 'table'"
-        query = "SELECT * FROM USER_BASE"
-        #query = "SELECT * FROM USER_VIEW_HIST"
-        cur.execute(query)
-        #print(cur.fetchall())
-        print('\n'.join([str(i) for i in cur.fetchall()]))
-        #'''
-        '''
-        query = 'DELETE FROM RESTR_BASE'
-        cur.execute(query)
-        conn.commit()
-        '''
-
-def _print_db(result_list):
-    print('\n'.join([str(i) for i in result_list]))
-
 CONV_TAB = {'DIST_HQ': 'distHQ', 'DIST_IT': 'distIT', 'COORD_X': 'longi', 'COORD_Y': 'lati',
-            'THUMBNAIL_URL': 'thumbnailURL', 'DCODE_URL': 'referenceURL',
+            'THUMBNAIL_URL': 'thumbnailURL', 'DCODE_URL': 'dcodeURL', #'DCODE_URL': 'referenceURL',
             'RESTR_DETAIL': 'Restr_Detail','USER_REVIEW': 'User_Review', 'USER_BASE': 'User_Base',
             'RESTR_BASE': 'Restr_Base', 'MATCH_INFO': 'Match_Info',
             'NICKNAME': 'nickName', 'REVIEW_TXT': 'reviewText'}
@@ -729,15 +628,50 @@ def _conv_col_name(src):
         else:
             new_k = str(k).title().replace('_', '')
             new_k = new_k[0].lower() + new_k[1:]
-        
+
         if isinstance(v, dict):
             new_v = _conv_col_name(v)
         else:
             new_v = v
 
         temp[new_k] = new_v
-    
+
     return temp
+
+def set_bldg(bldg_id, name, addr, coord_x, coord_y):
+    with sqlite3.connect(DB_FILE_PATH) as conn:
+        cur = conn.cursor()
+        query = '''\
+            INSERT INTO BLDG_BASE
+                VALUES ('{0}', '{1}', '{2}', {3}, {4})
+            '''.format(bldg_id, name, addr, coord_x, coord_y)
+        cur.execute(query)
+        conn.commit()
+
+def get_bldg(bldg_id = None):
+    with sqlite3.connect(DB_FILE_PATH) as conn:
+        cur = conn.cursor()
+        query = '''\
+            SELECT * FROM BLDG_BASE'''
+        if bldg_id != None:
+            query += "\tWHERE BID = '{}'".format(bldg_id)
+        cur.execute(query)
+        res = cur.fetchall()
+        header = list(zip(*cur.description))[0]
+        res = _make_json_from_selection(res, header)
+        res = _conv_col_name(res)
+
+        return res
+
+def set_restr(restr_id, name, phone, bldg_id, floor, dcode_url = '', thumbnail_url = ''):
+    with sqlite3.connect(r'yacc5.db') as conn:
+        cur = conn.cursor()
+        query = '''\
+            INSERT INTO RESTR_BASE VALUES
+                ('{0}', '{1}', '', '{2}', 0, 0, 0, 0, '{3}', -1, 0, '{4}', '{5}', '{6}', {7}, '')
+            '''.format(restr_id, name, phone, _get_timestamp(), dcode_url, thumbnail_url, bldg_id, floor)
+        cur.execute(query)
+        conn.commit()
 
 if __name__ == '__main__':
     #_calibrate_data()
